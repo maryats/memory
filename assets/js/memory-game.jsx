@@ -15,11 +15,9 @@ const INITIAL_STATE = {
 };
 
 class MemoryGame extends React.Component {
-
-
   constructor(props) {
     super(props);
-    this.state = INITIAL_STATE;
+    this.state = this.getStartingGameState();
   }
 
   render() {
@@ -41,7 +39,7 @@ class MemoryGame extends React.Component {
           {this.renderColumns(this.state.tiles.slice(12,16), 12)}
         </div>
         <div className="row">
-          <button onClick={this.restartGame.bind(this)}>Restart</button>
+          <button className="button-outline" onClick={this.restartGame.bind(this)}>Restart</button>
         </div>
       </div>
       );
@@ -52,7 +50,7 @@ class MemoryGame extends React.Component {
       let index = startIdx + idx;
       return <div key={index} className="column">
         <Tile 
-          onClick={this.flipCard.bind(this, index)}
+          onClick={this.flipTile.bind(this, index)}
           value={val} 
           isFaceUp={this.state.selected.includes(index) || this.state.matched.includes(index)}
         />
@@ -60,81 +58,48 @@ class MemoryGame extends React.Component {
     });
   }
 
-  flipCard(idx) {
-    console.log(this.state);
-    let selected = this.state.selected;
-    let tiles = this.state.tiles;
-    let newMatched = this.state.matched.slice();
+  flipTile(idx) {
+    let selected = this.state.selected.slice();
+    let tiles = this.state.tiles.slice();
+    let matched = this.state.matched.slice();
 
     if (!selected.includes(idx) && !this.state.matched.includes(idx)) {
-      let newSelected = selected.slice();
-      newSelected.push(idx);
+      selected.push(idx);
 
-      // check for match
-      if (newSelected.length == 2) {
-        // matched!
-        if (tiles[newSelected[0]] == tiles[newSelected[1]]) {
-          newMatched = newMatched.concat(newSelected);
-        }
-        newSelected = [];
-      }
-
-      // clear selected, increment clicks, update matched
       this.setState(_.assign(this.state, {
-        selected: newSelected, 
-        numClicks: this.state.numClicks + 1,
-        matched: newMatched
+        selected: selected, 
+        numClicks: this.state.numClicks + 1
       }));
-    }
+
+      // check for match on second click
+      if (selected.length == 2) {
+        
+        // matched!
+        if (tiles[selected[0]] == tiles[selected[1]]) {
+          matched = matched.concat(selected);
+        }
+
+        setTimeout(() => {
+          this.setState(_.assign(this.state, {
+          selected: [], 
+          matched: matched
+        }));}, 1000);
+      }
+    }    
   }
 
   restartGame() {
-    this.setState(INITIAL_STATE);
+    this.setState(this.getStartingGameState());
+  }
+
+  getStartingGameState() {
+    let shuffledTiles = _.shuffle(INITIAL_STATE.tiles);
+    return _.assign(INITIAL_STATE, {tiles: shuffledTiles});
   }
 }
 
 function Tile(props) {
   return <button onClick={props.onClick}>
-    {props.isFaceUp ? props.value : ""}
+    {props.isFaceUp ? props.value : "  "}
   </button>;
 }
-
-class Starter extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { left: false };
-  }
-
-  swap(_ev) {
-    let state1 = _.assign({}, this.state, { left: !this.state.left });
-    this.setState(state1);
-  }
-
-  hax(_ev) {
-    alert("hax!");
-  }
-
-  render() {
-    let button = <div className="column" onMouseMove={this.swap.bind(this)}>
-    <p><button onClick={this.hax.bind(this)}>Click Me</button></p>
-    </div>;
-
-    let blank = <div className="column">
-    <p>Nothing here.</p>
-    </div>;
-
-    if (this.state.left) {
-      return <div className="row">
-      {button}
-      {blank}
-      </div>;
-    }
-    else {
-      return <div className="row">
-      {blank}
-      {button}
-      </div>;
-    }
-  }
-}
-

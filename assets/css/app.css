@@ -2,8 +2,65 @@
 
 @import "~milligram/dist/milligram";
 
-.column > p {
-    padding-top: 10ex;
-    text-align: center;
+.memory-container {
+	max-width: 90rem;
 }
 
+.tile {
+	background-color: #eeeeee;
+	text-align: center;
+	height: 65px;
+	margin: 1.0rem 0;
+	padding-top: 1.3rem;
+	width: 100%;
+}
+
+.restart-container {
+	text-align: right;
+}
+
+.click-count {
+	margin-top: 0.5rem;
+}
+
+.hidden {
+	display: none;
+}
+
+/* Mobile */
+@media (max-width: 40rem) {
+	.memory-container {
+		padding: 0;
+	}
+
+	.memory-row {
+		flex-direction: row;
+	}
+
+	.col {
+		margin-bottom: inherit;
+		padding: 0 1.0rem;
+	}
+
+	.col.column-25 {
+		max-width: 25%;
+	}
+
+	.col.column-50 {
+		max-width: 50%;
+	}
+}
+
+@media (min-width: 600px) {
+	.tile {
+		height: 100px;
+		padding-top: 3.1rem;
+	}
+}
+
+@media (min-width: 768px) {
+	.tile {
+		height: 125px;
+		padding-top: 4.4rem;
+	}
+}

@@ -44,7 +44,7 @@ class MemoryGame extends React.Component {
           {this.renderColumns(this.state.tiles.slice(12,16), 12)}
         </div>
       </div>
-      );
+    );
   }
 
   renderColumns(columns, startIdx) {
@@ -62,19 +62,18 @@ class MemoryGame extends React.Component {
   }
 
   flipTile(idx) {
-    // ignore clicks during delay
-    if (!this.state.isDelay) {
-      let selected = this.state.selected.slice();
-      let tiles = this.state.tiles.slice();
-      let matched = this.state.matched.slice();
+    let selected = this.state.selected.slice();
+    let tiles = this.state.tiles.slice();
+    let matched = this.state.matched.slice();
 
-      if (!selected.includes(idx) && !matched.includes(idx)) {
-        selected.push(idx);
+    // ignore clicks during delay, or if tile already flipped
+    if (!this.state.isDelay && !selected.includes(idx) && !matched.includes(idx)) {
+      selected.push(idx);
 
-        this.setState(_.assign(this.state, {
-          selected: selected, 
-          numClicks: this.state.numClicks + 1
-        }));
+      this.setState(_.assign(this.state, {
+        selected: selected, 
+        numClicks: this.state.numClicks + 1
+      }));
 
       // check for match on second click
       if (selected.length == 2) {
@@ -90,9 +89,9 @@ class MemoryGame extends React.Component {
             selected: [], 
             matched: matched,
             isDelay: false
-          }));}, 1000);
-        }
-      }    
+          }));
+        }, 1000);
+      }
     }
   }
 

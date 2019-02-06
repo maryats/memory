@@ -57,13 +57,16 @@ defmodule Memory.Game do
 			|> Map.put(:selected, gs)
 		else
 			Map.put(game, :selected, gs)
-
 			# :timer.apply_after(1000, __MODULE__, clear_select(game), game) 
 		end
 	end
 
-	# def clear_select(game) do
-	# 	Map.put(game, :selected, [])
-	# end
+	def clear_select(game) do
+		if (game.selected.length == 2) do
+			Map.put(game, :selected, [])	
+		else
+			game
+		end
+	end
 
 end

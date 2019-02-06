@@ -68,11 +68,6 @@ class MemoryGame extends React.Component {
   gotView(view) {
     console.log(view.game);
     this.setState(view.game);
-    // if (view.game.selected.length == 0) {
-    //   setTimeout(() => this.setState(view.game), 1000);
-    // } else {
-    //   this.setState(view.game);
-    // }
   }
 
   onGuess(selected) {
@@ -89,6 +84,8 @@ class MemoryGame extends React.Component {
     if (!this.state.isDelay && !selected.includes(idx) && !matched.includes(idx)) {
       selected.push(idx);
       this.onGuess(selected);
+
+      
     }
   }
 

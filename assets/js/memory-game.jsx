@@ -40,7 +40,7 @@ class MemoryGame extends React.Component {
   }
 
   renderRows() {
-    if (this.state.matched.length == this.state.tiles.length) {
+    if (this.state.matched.length > 0 && this.state.matched.length == this.state.tiles.length) {
       return <div className="row game-over">
         <div className="column">
           <h2>You did it!</h2>
@@ -48,6 +48,7 @@ class MemoryGame extends React.Component {
           <p>Can you do better?</p>
         </div>
       </div>;
+
     } else {
       return _.map(_.chunk(this.state.tiles, 4), (row, idx) => {
         return <div className="row memory-row" key={idx}>

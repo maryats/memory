@@ -62,13 +62,4 @@ defmodule Memory.Game do
 			Map.put(game, :selected, [])
 		end
 	end
-
-	# def clear_selected(game) do
-	# 	IO.puts(length(game.selected))
-	# 	if (length(game.selected) == 2) do
-	# 		Map.put(game, :selected, [])	
-	# 	else
-	# 		game
-	# 	end
-	# end
 end

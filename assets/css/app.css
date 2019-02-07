@@ -1,6 +1,9 @@
-/* This file is for your main application css. */
-
 @import "~milligram/dist/milligram";
+
+.game-over {
+	text-align: center;
+	padding-top: 10rem;
+}
 
 .memory-container {
 	max-width: 90rem;

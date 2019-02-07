@@ -4,17 +4,12 @@ defmodule Memory.Game do
 			num_clicks: 0,
 			selected: [],
 			matched: [],
-			tiles: shuffle_tiles()
+			tiles: Enum.shuffle(["A", "A", "B", "B", "C", "C", "D", "D", "E", "E", "F",  "F", "G",  "G", "H",  "H"])
 		}
 	end
 
 	def client_view(game) do
-		%{
-			num_clicks: game.num_clicks,
-			selected: game.selected,
-			matched: game.matched,
-			tiles: obfuscate(game.tiles, game.selected ++ game.matched)
-		}
+		Map.put(game, :tiles, obfuscate(game.tiles, game.selected ++ game.matched))
 	end
 
 	def obfuscate(tiles, visible) do
@@ -29,44 +24,51 @@ defmodule Memory.Game do
 		end
 	end
 
-	def shuffle_tiles() do 
-		Enum.shuffle(["A", "A", "B", "B", "C", "C", "D", "D", "E", "E", "F",  "F", "G",  "G", "H",  "H"]);
+	def select(game, [first]) do
+		select_and_count_click(game, [first])
 	end
 
-	def guess(game, [first]) do
-		gs = game.selected
-		|> MapSet.new()
-		|> MapSet.put(first)
+	def select(game, [first, second]) do
+		select_and_count_click(game, [first, second])
+	end
+
+	# guard against client sending improper (0 or > 2) number of selected items
+	def select(game, _selected) do
+		Map.put(game, :selected, [])
+	end
+
+	defp select_and_count_click(game, selected) do
+		gs = selected
+		|> MapSet.new() # de-duplicate just in case
 		|> MapSet.to_list
 
-		Map.put(game, :selected, gs)
+		game
+		|> Map.put(:selected, gs)
+		|> Map.put(:num_clicks, game.num_clicks + 1)
 	end
 
 	def guess(game, [first, second]) do
-		gs = game.selected
+		if (Enum.fetch!(game.tiles, first) == Enum.fetch!(game.tiles, second)) do
+			matched = game.matched
 			|> MapSet.new()
 			|> MapSet.put(first)
 			|> MapSet.put(second)
 			|> MapSet.to_list
 
-		if (Enum.fetch(game, first) == Enum.fetch(game, second)) do
-			IO.puts(Map.fetch(game, first))
-
 			game
-			|> Map.put(:matched, gs)
-			|> Map.put(:selected, gs)
-		else
-			Map.put(game, :selected, gs)
-			# :timer.apply_after(1000, __MODULE__, clear_select(game), game) 
+			|> Map.put(:matched, matched)
+			|> Map.put(:selected, [])
+		else 
+			Map.put(game, :selected, [])
 		end
 	end
 
-	def clear_select(game) do
-		if (game.selected.length == 2) do
-			Map.put(game, :selected, [])	
-		else
-			game
-		end
-	end
-
+	# def clear_selected(game) do
+	# 	IO.puts(length(game.selected))
+	# 	if (length(game.selected) == 2) do
+	# 		Map.put(game, :selected, [])	
+	# 	else
+	# 		game
+	# 	end
+	# end
 end

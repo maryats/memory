@@ -12,67 +12,67 @@ class MemoryGame extends React.Component {
     this.channel = props.channel;
 
     this.state = {
-      numClicks: 0,
+      num_clicks: 0,
       selected: [],
       matched: [],
-      tiles: [],
-      isDelay: false
+      tiles: []
     };
 
     this.channel.join()
-    .receive("ok", this.gotView.bind(this))
-    .receive("error", resp => { console.log("Unable to join", resp); });
+      .receive("ok", this.gotView.bind(this))
+      .receive("error", resp => { console.error("Unable to join", resp); });
   }
 
   render() {
     return (
       <div className="container memory-container">
-      <div className="row memory-row">
-      <div className="col column column-50">
-      <h5 className="click-count">Clicks: {this.state.numClicks}</h5>
+        <div className="row memory-row">
+          <div className="col column column-50">
+            <h5 className="click-count">Clicks: {this.state.num_clicks}</h5>
+          </div>
+          <div className="col column column-50 restart-container">
+            <button onClick={this.restartGame.bind(this)}>Restart</button>
+          </div>
+        </div>
+        {this.renderRows()}
       </div>
-      <div className="col column column-50 restart-container">
-      <button onClick={this.restartGame.bind(this)}>Restart</button>
-      </div>
-      </div>
-      <div className="row memory-row">
-      {this.renderColumns(this.state.tiles.slice(0,4), 0)}
-      </div>
-      <div className="row memory-row">
-      {this.renderColumns(this.state.tiles.slice(4,8), 4)}
-      </div>
-      <div className="row memory-row">
-      {this.renderColumns(this.state.tiles.slice(8,12), 8)}
-      </div>
-      <div className="row memory-row">
-      {this.renderColumns(this.state.tiles.slice(12,16), 12)}
-      </div>
-      </div>
-      );
+    );
+  }
+
+  renderRows() {
+    if (this.state.matched.length == this.state.tiles.length) {
+      return <div className="row game-over">
+        <div className="column">
+          <h2>You did it!</h2>
+          <h4>Final score: {this.state.num_clicks} clicks</h4>
+          <p>Can you do better?</p>
+        </div>
+      </div>;
+    } else {
+      return _.map(_.chunk(this.state.tiles, 4), (row, idx) => {
+        return <div className="row memory-row" key={idx}>
+          {this.renderColumns(row, idx * 4)}
+        </div>;
+      })
+    }    
   }
 
   renderColumns(columns, startIdx) {
     return _.map(columns, (val, idx) => {
       let index = startIdx + idx;
       return <div key={index} className="col column">
-      <Tile 
-      onClick={this.flipTile.bind(this, index)}
-      value={val} 
-      isMatched={this.state.matched.includes(index)}
-      isFaceUp={this.state.selected.includes(index)}
-      />
+        <Tile 
+          onClick={this.flipTile.bind(this, index)}
+          value={val} 
+          isMatched={this.state.matched.includes(index)}
+          isFaceUp={this.state.selected.includes(index)}
+        />
       </div>;
     });
   }
 
   gotView(view) {
-    console.log(view.game);
     this.setState(view.game);
-  }
-
-  onGuess(selected) {
-    this.channel.push("guess", { selected: selected })
-    .receive("ok", this.gotView.bind(this));
   }
 
   flipTile(idx) {
@@ -80,23 +80,35 @@ class MemoryGame extends React.Component {
     let tiles = this.state.tiles.slice();
     let matched = this.state.matched.slice();
 
-    // ignore clicks during delay, or if tile already flipped
-    if (!this.state.isDelay && !selected.includes(idx) && !matched.includes(idx)) {
+    // ignore clicks on already-flipped tiles or if two tiles already selected
+    if (selected.length < 2 && !selected.includes(idx) && !matched.includes(idx)) {
       selected.push(idx);
-      this.onGuess(selected);
+      this.selectTile(selected);
 
-      
+      // ask server to evaluate guess after a delay 
+      if (selected.length == 2) {
+        setTimeout(() => {this.makeGuess(selected);}, 1000);
+      }
     }
   }
 
+  selectTile(selected) {
+    this.channel.push("select", { selected: selected })
+      .receive("ok", this.gotView.bind(this));
+  }
+
+  makeGuess(selected) {
+    this.channel.push("guess", { selected: selected })
+      .receive("ok", this.gotView.bind(this));
+  }
+
   restartGame() {
-    console.log("restart");
     this.channel.push("restart").receive("ok", this.gotView.bind(this));
   }
 }
 
 function Tile(props) {
   return <div className={props.isMatched ? "tile hidden" : "tile"} onClick={props.onClick}>
-  <h3>{props.isFaceUp ? props.value : ""}</h3>
+    <h3>{props.isFaceUp ? props.value : ""}</h3>
   </div>;
 }

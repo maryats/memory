@@ -12,4 +12,8 @@ defmodule MemoryWeb.PageController do
   def index(conn, _params) do
     render conn, "index.html"
   end
+
+  def redirect_to_index(conn, _params) do
+  	redirect(conn, to: "/")
+  end
 end

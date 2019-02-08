@@ -2,22 +2,25 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import _ from 'lodash';
 
-export default function game_init(root) {
-  ReactDOM.render(<MemoryGame />, root);
+export default function game_init(root, channel) {
+  ReactDOM.render(<MemoryGame channel={channel} />, root);
 }
-
-const INITIAL_STATE = {
-  numClicks: 0,
-  selected: [],
-  matched: [],
-  tiles: ["A", "A", "B", "B", "C", "C", "D", "D", "E", "E", "F",  "F", "G",  "G", "H",  "H"],
-  isDelay: false
-};
 
 class MemoryGame extends React.Component {
   constructor(props) {
     super(props);
-    this.state = this.getStartingGameState();
+    this.channel = props.channel;
+
+    this.state = {
+      num_clicks: 0,
+      selected: [],
+      matched: [],
+      tiles: []
+    };
+
+    this.channel.join()
+      .receive("ok", this.gotView.bind(this))
+      .receive("error", resp => { console.error("Unable to join", resp); });
   }
 
   render() {
@@ -25,26 +28,34 @@ class MemoryGame extends React.Component {
       <div className="container memory-container">
         <div className="row memory-row">
           <div className="col column column-50">
-            <h5 className="click-count">Clicks: {this.state.numClicks}</h5>
+            <h5 className="click-count">Clicks: {this.state.num_clicks}</h5>
           </div>
           <div className="col column column-50 restart-container">
             <button onClick={this.restartGame.bind(this)}>Restart</button>
           </div>
         </div>
-        <div className="row memory-row">
-          {this.renderColumns(this.state.tiles.slice(0,4), 0)}
-        </div>
-        <div className="row memory-row">
-          {this.renderColumns(this.state.tiles.slice(4,8), 4)}
-        </div>
-        <div className="row memory-row">
-          {this.renderColumns(this.state.tiles.slice(8,12), 8)}
-        </div>
-        <div className="row memory-row">
-          {this.renderColumns(this.state.tiles.slice(12,16), 12)}
-        </div>
+        {this.renderRows()}
       </div>
     );
+  }
+
+  renderRows() {
+    if (this.state.matched.length > 0 && this.state.matched.length == this.state.tiles.length) {
+      return <div className="row game-over">
+        <div className="column">
+          <h2>You did it!</h2>
+          <h4>Final score: {this.state.num_clicks} clicks</h4>
+          <p>Can you do better?</p>
+        </div>
+      </div>;
+
+    } else {
+      return _.map(_.chunk(this.state.tiles, 4), (row, idx) => {
+        return <div className="row memory-row" key={idx}>
+          {this.renderColumns(row, idx * 4)}
+        </div>;
+      })
+    }    
   }
 
   renderColumns(columns, startIdx) {
@@ -61,47 +72,39 @@ class MemoryGame extends React.Component {
     });
   }
 
+  gotView(view) {
+    this.setState(view.game);
+  }
+
   flipTile(idx) {
     let selected = this.state.selected.slice();
     let tiles = this.state.tiles.slice();
     let matched = this.state.matched.slice();
 
-    // ignore clicks during delay, or if tile already flipped
-    if (!this.state.isDelay && !selected.includes(idx) && !matched.includes(idx)) {
+    // ignore clicks on already-flipped tiles or if two tiles already selected
+    if (selected.length < 2 && !selected.includes(idx) && !matched.includes(idx)) {
       selected.push(idx);
+      this.selectTile(selected);
 
-      this.setState(_.assign(this.state, {
-        selected: selected, 
-        numClicks: this.state.numClicks + 1
-      }));
-
-      // check for match on second click
+      // ask server to evaluate guess after a delay 
       if (selected.length == 2) {
-        // matched!
-        if (tiles[selected[0]] == tiles[selected[1]]) {
-          matched = matched.concat(selected);
-        }
-
-        // delay hiding unmatched tiles
-        this.setState(_.assign(this.state, {isDelay: true}));
-        setTimeout(() => {
-          this.setState(_.assign(this.state, {
-            selected: [], 
-            matched: matched,
-            isDelay: false
-          }));
-        }, 1000);
+        setTimeout(() => {this.makeGuess(selected);}, 1000);
       }
     }
   }
 
-  restartGame() {
-    this.setState(this.getStartingGameState());
+  selectTile(selected) {
+    this.channel.push("select", { selected: selected })
+      .receive("ok", this.gotView.bind(this));
   }
 
-  getStartingGameState() {
-    let shuffledTiles = _.shuffle(INITIAL_STATE.tiles);
-    return _.assign({}, INITIAL_STATE, {tiles: shuffledTiles});
+  makeGuess(selected) {
+    this.channel.push("guess", { selected: selected })
+      .receive("ok", this.gotView.bind(this));
+  }
+
+  restartGame() {
+    this.channel.push("restart").receive("ok", this.gotView.bind(this));
   }
 }
 
